@@ -28,10 +28,10 @@ The dashboard uses `NEXT_PUBLIC_INGEST_API_URL=https://YOUR_DEVLITE_API`. `FRONT
 Install directly from the source repository:
 
 ```bash
-npm install github:ishvexa-hub/devlite-hosting
+npm install git+https://github.com/ishvexa-hub/devlite-hosting.git
 ```
 
-The installed package is named `@devlite/hosting`. Pin a reviewed commit in production (`github:ishvexa-hub/devlite-hosting#COMMIT_SHA`) or install a tarball generated with `npm pack`. Registry publication is separate; this guide does not assume an npm release exists.
+The installed package is named `@devlite/hosting`. Pin a reviewed commit in production (`git+https://github.com/ishvexa-hub/devlite-hosting.git#COMMIT_SHA`) or install a tarball generated with `npm pack`. Registry publication is separate; this guide does not assume an npm release exists.
 
 ```js
 // Your hosting backend; never import this credential-bearing client in a browser.
