@@ -1,0 +1,54 @@
+{
+  "name": "@devlite/hosting",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Server provisioning and cookie-free embedded observability for hosting platforms",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./embed": {
+      "types": "./embed.d.ts",
+      "default": "./embed.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "embed.js",
+    "embed.d.ts",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "examples"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "tsc --noEmit --strict --target es2022 --lib es2022,dom --module nodenext --moduleResolution nodenext test/types.ts"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishvexa-hub/devlite-hosting.git"
+  },
+  "homepage": "https://github.com/ishvexa-hub/devlite-hosting#readme",
+  "bugs": {
+    "url": "https://github.com/ishvexa-hub/devlite-hosting/issues"
+  },
+  "keywords": [
+    "devlite",
+    "hosting",
+    "observability",
+    "monitoring",
+    "iframe",
+    "sdk"
+  ],
+  "sideEffects": false,
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
