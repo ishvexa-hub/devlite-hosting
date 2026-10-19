@@ -121,3 +121,32 @@ export function createDevLiteLaunchRoute<R extends Request = Request>(options: {
   allowedOrigins: string[];
   authorize: (request: R) => Promise<LaunchGrant | null>;
 }): (request: R) => Promise<Response>;
+
+export type HostingApplication = {
+  customerId: string;
+  externalResourceId: string;
+  name: string;
+  service?: string;
+  environment?: string;
+};
+export function createDevLiteHostingIntegration<R extends Request = Request>(options: {
+  client?: DevLiteHosting;
+  endpoint?: string;
+  credential?: string;
+  fetch?: typeof fetch;
+  timeoutMs?: number;
+  maxRetries?: number;
+  allowedOrigins: string[];
+  authorize: (request: any) => Promise<LaunchGrant | null>;
+  /** Must merge secrets into the app environment and persist resource.id for launches. Safe to repeat. */
+  applyEnvironment: (input: {
+    application: HostingApplication;
+    resource: Resource;
+    environmentVariables: EnvironmentVariables;
+  }) => Promise<void>;
+}): {
+  client: DevLiteHosting;
+  enable(application: HostingApplication): Promise<Resource & {created: boolean}>;
+  launchRoute: (request: R) => Promise<Response>;
+  launchHandler: ReturnType<typeof createDevLiteLaunchHandler>;
+};

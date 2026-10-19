@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add `createDevLiteHostingIntegration` with `enable`, environment installation callback, and ready-to-mount launch routes.
+- Add same-origin `launchUrl` embeds to remove custom browser authorization boilerplate.
+- Keep lower-level APIs compatible and preserve per-launch RBAC, strict origins, nonce binding, cancellation, and secret separation.
+
+
 ## 0.2.0
 
 - Standalone source repository: https://github.com/ishvexa-hub/devlite-hosting.

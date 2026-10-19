@@ -1,3 +1,4 @@
+type LaunchCallback = (input: {nonce: string; parentOrigin: string; signal: AbortSignal}) => Promise<{code: string}>;
 export function mountDevLite(options: {
   container: HTMLElement;
   providerId: string;
@@ -9,14 +10,10 @@ export function mountDevLite(options: {
   title?: string;
   onStatusChange?: (status: EmbedStatus) => void;
   theme?: "light" | "dark" | "system";
-  createLaunch: (input: {
-    nonce: string;
-    parentOrigin: string;
-    signal: AbortSignal;
-  }) => Promise<{ code: string }>;
+
   onError?: (error: Error) => void;
   onReady?: () => void;
-}): {
+} & ({launchUrl: string; createLaunch?: never} | {createLaunch: LaunchCallback; launchUrl?: never})): {
   iframe: HTMLIFrameElement;
   readonly status: EmbedStatus;
   reload(): void;

@@ -1,5 +1,6 @@
 import {
   DevLiteHosting,
+  createDevLiteHostingIntegration,
   DevLiteHostingError,
   createDevLiteLaunchRoute,
   createDevLiteLaunchHandler,
@@ -72,3 +73,19 @@ client.createLaunch("id", {
   // @ts-expect-error Unsupported permission must not be granted through the SDK.
   permissions: ["admin"],
 });
+
+const integration = createDevLiteHostingIntegration({
+  client, allowedOrigins: ["https://console.example.test"],
+  authorize: async () => ({resourceId: "resource", actorId: "user"}),
+  applyEnvironment: async ({resource, environmentVariables}) => {
+    const id: string = resource.id;
+    const key: string = environmentVariables.DEVLITE_API_KEY;
+    void id; void key;
+  },
+});
+void integration.enable({customerId: "customer", externalResourceId: "app", name: "API"});
+function simpleBrowser(container: HTMLElement) {
+  mountDevLite({container, providerId: "11111111-1111-4111-8111-111111111111",
+    dashboardUrl: "https://dashboard.example.test", launchUrl: "/api/monitoring/launch"});
+}
+void simpleBrowser;

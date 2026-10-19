@@ -8,6 +8,82 @@ A hosting platform can provision DevLite per customer application and embed obse
 
 This is a generic provider integration. Vendor-specific marketplace registration, app approval, build-layer installation and production deployment are separate platform work.
 
+## Quickstart: one setup, one enable call, one embed
+
+Register your platform once in **Configuration → Hosting integrations** and save its provider ID, credential, and exact console origin. Then install the package:
+
+```bash
+npm install git+https://github.com/ishvexa-hub/devlite-hosting.git
+```
+
+### 1. Connect your platform backend
+
+```js
+import { createDevLiteHostingIntegration } from '@devlite/hosting';
+
+export const monitoring = createDevLiteHostingIntegration({
+  endpoint: process.env.DEVLITE_API_URL,
+  credential: process.env.DEVLITE_HOSTING_CREDENTIAL,
+  allowedOrigins: ['https://console.example.com'],
+  authorize: async request => {
+    // Your existing login + application permission checks, on every launch.
+    const access = await resolveApplicationAccess(request);
+    if (!access) return null;
+    return { resourceId: access.app.devliteResourceId, actorId: access.user.id };
+  },
+  applyEnvironment: async ({ application, resource, environmentVariables }) => {
+    await platform.mergeSecrets(application.externalResourceId, environmentVariables);
+    await platform.saveMonitoringResource(application.externalResourceId, resource.id);
+  },
+});
+
+// Next.js App Router / any Web Request server:
+export const POST = monitoring.launchRoute;
+// Express alternative (with your JSON parser and normal authentication):
+// app.post('/api/apps/:appId/monitoring/launch', requireLogin, monitoring.launchHandler);
+```
+
+`resolveApplicationAccess`, `platform.mergeSecrets`, and `platform.saveMonitoringResource` are the two connections to your hosting platform: current access checks and environment/installation persistence. Resolve the app ID from your route, then check access in your database. Never trust a resource ID, actor, or permissions sent by the browser. The default embedded permission is read-only; grant `['read', 'triage']` explicitly only when your platform's RBAC permits it.
+
+### 2. Enable monitoring for an application
+
+Call this from your authenticated monitoring toggle or a trusted provisioning hook:
+
+```js
+const resource = await monitoring.enable({
+  customerId: application.accountId,
+  externalResourceId: application.installationId,
+  name: application.name,
+  service: application.slug,
+  environment: 'production',
+});
+// resource.id is safe metadata; provider credentials and ingest secrets are omitted.
+```
+
+The SDK provisions the project and invokes `applyEnvironment` before reporting success. Merge these variables into the application's existing environment; do not replace unrelated secrets. Make the callback safe to repeat. A platform configuration failure rejects `enable()`; retry it with the same customer/installation IDs to complete setup without creating another project. Provisioning and your platform's environment store are separate systems, so this is not an atomic transaction. The callback runs on retries too, including when the DevLite resource already exists. Suspended installations must be explicitly resumed; a disconnected installation needs a new installation ID.
+
+The runtime still needs the language SDK installed and initialized. For Node.js hosts, install `@devlite/nodejs` in the application/build layer and append `--require @devlite/nodejs/register` to its existing `NODE_OPTIONS`; the injected environment enables capture. Next.js and other languages use their normal startup/framework integration. Apply/redeploy changed runtime variables according to your platform's usual deployment flow.
+
+### 3. Add the monitoring panel
+
+```js
+import { mountDevLite } from '@devlite/hosting/embed';
+
+const panel = mountDevLite({
+  container: document.querySelector('#monitoring'),
+  providerId: 'YOUR_PROVIDER_ID',
+  dashboardUrl: 'https://devlite.ishvexa.rw',
+  launchUrl: `/api/apps/${encodeURIComponent(application.id)}/monitoring/launch`,
+});
+
+// When navigating away or signing out:
+panel.destroy();
+```
+
+`launchUrl` calls your own authenticated, same-origin route. It supplies the frame nonce and parent origin, cancels pending work on unmount, and rejects cross-origin URLs and redirects. Your console must allow DevLite in its CSP `frame-src`. For bearer-auth headers, CSRF tokens, or other custom request behavior, use the existing `createLaunch` callback instead of `launchUrl`.
+
+The lower-level API below remains available for custom lifecycle and UI flows.
+
 ## 1. Register the provider
 
 In DevLite, open **Configuration → Hosting integrations**. Register the platform name and exact dashboard origins, for example `https://console.example.com`. HTTPS is required except on localhost. Wildcards, credentials, query strings and URL paths are rejected.

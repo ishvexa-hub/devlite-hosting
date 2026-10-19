@@ -427,3 +427,46 @@ export function createDevLiteLaunchRoute(input) {
     }
   };
 }
+
+
+/** One setup for provisioning, environment injection, and authorized embeds. */
+export function createDevLiteHostingIntegration(options = {}) {
+  if (typeof window !== "undefined" && typeof document !== "undefined")
+    throw new Error("Hosting integration setup is server-only. Use @devlite/hosting/embed in browsers.");
+  const { allowedOrigins, authorize, applyEnvironment } = options;
+  if (typeof applyEnvironment !== "function")
+    throw new TypeError("Provide applyEnvironment to install application secrets.");
+  const client = options.client || new DevLiteHosting({
+    endpoint: options.endpoint,
+    credential: options.credential,
+    fetch: options.fetch,
+    timeoutMs: options.timeoutMs,
+    maxRetries: options.maxRetries,
+  });
+  if (typeof client.provision !== "function")
+    throw new TypeError("Provide a hosting client with provision support.");
+  const launch = { client, allowedOrigins, authorize };
+  const launchRoute = createDevLiteLaunchRoute(launch);
+  const launchHandler = createDevLiteLaunchHandler(launch);
+  return {
+    client,
+    launchRoute,
+    launchHandler,
+    async enable(application) {
+      const { customerId, externalResourceId, name, service, environment } = application || {};
+      const input = { customerId, externalResourceId, name, service, environment };
+      const result = await client.provision(input);
+      const variables = result.environmentVariables;
+      if (typeof result.id !== "string" || !result.id || !variables || typeof variables.DEVLITE_API_KEY !== "string" || !variables.DEVLITE_API_KEY)
+        throw new DevLiteHostingError("Provisioning did not return application configuration.", {code: "INVALID_RESPONSE"});
+      if (result.status !== "active")
+        throw new DevLiteHostingError("This installation is not active. Resume it explicitly or create a new installation after disconnect.", {status: 409});
+      // Return only resource metadata. Environment secrets stay in the callback.
+      const resource = {};
+      for (const key of ["id", "projectId", "customerId", "externalResourceId", "name", "service", "environment", "status", "createdAt"])
+        resource[key] = result[key];
+      await applyEnvironment({application: input, resource: {...resource}, environmentVariables: {...variables}});
+      return {...resource, created: result.created};
+    },
+  };
+}

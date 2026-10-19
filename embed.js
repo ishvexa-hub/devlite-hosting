@@ -4,6 +4,7 @@ export function mountDevLite({
   providerId,
   dashboardUrl,
   createLaunch,
+  launchUrl,
   onError = () => {},
   onReady = () => {},
   onStatusChange = () => {},
@@ -18,6 +19,23 @@ export function mountDevLite({
     throw new Error(
       "mountDevLite requires a browser. Mount it after your component is rendered.",
     );
+  if (launchUrl !== undefined) {
+    if (typeof launchUrl !== "string" || !launchUrl.trim()) throw new TypeError("Provide a nonempty launchUrl.");
+    if (createLaunch !== undefined) throw new TypeError("Provide launchUrl or createLaunch, not both.");
+    let endpoint;
+    try { endpoint = new URL(launchUrl, window.location.origin); }
+    catch (_) { throw new TypeError("Provide a valid same-origin launchUrl."); }
+    if (endpoint.origin !== window.location.origin || endpoint.username || endpoint.password || endpoint.hash)
+      throw new TypeError("launchUrl must use your console’s own origin without credentials or a fragment.");
+    createLaunch = async ({nonce, parentOrigin, signal}) => {
+      const response = await fetch(endpoint, {
+        method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", signal,
+        headers: {"Content-Type": "application/json"}, body: JSON.stringify({nonce, parentOrigin}),
+      });
+      if (!response.ok) throw new Error(`Your platform could not authorize monitoring (${response.status}).`);
+      return response.json();
+    };
+  }
   if (
     !container ||
     typeof container.appendChild !== "function" ||
